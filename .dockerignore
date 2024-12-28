@@ -1,0 +1,14 @@
+# Ignore the virtual environment directory
+.venv/
+
+# Ignore other typical files and directories
+*.pyc
+*.pyo
+__pycache__/
+*.log
+*.env
+*.git
+node_modules/
+build/
+dist/
+*.md
