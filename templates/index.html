@@ -28,14 +28,14 @@
     a {
       color: #0078b4;
       text-decoration: none;
-      transition: color .25s
+      transition: color .25s;
     }
     a:active, a:focus, a:hover { color: #005580; }
     a:focus { outline: thin dotted #333 }
     .jumbotron {
       margin: 60px 0;
       text-align: center;
-      transition: width .5s, height .5s, margin .5s, padding .5s
+      transition: width .5s, height .5s, margin .5s, padding .5s;
     }
     .jumbotron h1 {
       color: inherit;
@@ -51,7 +51,7 @@
       font-weight: 200;
       line-height: 30px;
       margin-bottom: 20px;
-      transition: font-size .5s
+      transition: font-size .5s;
     }
     .jumbotron .btn {
       background: rgba(202, 230, 190, .75);
@@ -69,6 +69,12 @@
       background-color: #bce4aa;
       text-decoration: none;
     }
+
+    .url-container {
+      margin-top: 20px;
+      font-size: 16px;
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -77,18 +83,63 @@
       <h1>blck</h1>
       <p class="lead">Upload an <abbr title="It gets deleted when viewed"><u>ephemeral</u></abbr> file</p>
       <div class="form">
-        <form method="post" action="{{ r }}" enctype="multipart/form-data">
+        <form id="uploadForm" method="post" enctype="multipart/form-data">
           <input type="file" id="upload-input" name="c" class="btn" value="Select file">
+          <span id="file-name" style="display:none;"></span>
           <input type="submit" value="Submit">
         </form>
       </div>
+
+      <div class="url-container" id="url-container">
+        <p>File URL: <a id="file-url" href="#" target="_blank">...</a></p>
+      </div>
+
       <hr>
       <footer>
         with ❤️ from <a href="https://twitter.com/parazyd">parazyd</a> |
         <a href="https://github.com/parazyd/blck">original-source</a> |
         <a href="https://github.com/WasimTTY/blck-sanic">sanic-version</a>
       </footer>
-    <div>
+    </div>
   </div>
+
+  <script>
+    const form = document.getElementById("uploadForm");
+    const fileInput = document.getElementById("upload-input");
+    const fileNameElement = document.getElementById("file-name");
+    const urlContainer = document.getElementById("url-container");
+    const fileUrl = document.getElementById("file-url");
+
+    form.addEventListener("submit", function(e) {
+      e.preventDefault();
+      const formData = new FormData(form);
+
+      fileNameElement.style.display = "none";
+
+      const xhr = new XMLHttpRequest();
+      xhr.open("POST", "/", true);
+
+      xhr.onload = function() {
+        if (xhr.status === 200) {
+          const response = JSON.parse(xhr.responseText);
+          const url = response.url;
+          fileUrl.href = url;
+          fileUrl.textContent = url;
+          urlContainer.style.display = "block";
+          
+          fileInput.value = '';
+        } else {
+          alert("Error uploading file.");
+        }
+      };
+
+      xhr.send(formData);
+    });
+
+    fileInput.addEventListener("change", function() {
+      fileNameElement.textContent = fileInput.files[0].name;
+      fileNameElement.style.display = "inline";
+    });
+  </script>
 </body>
 </html>
