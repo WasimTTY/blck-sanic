@@ -86,7 +86,7 @@
         <form id="uploadForm" method="post" enctype="multipart/form-data">
           <input type="file" id="upload-input" name="c" class="btn" value="Select file">
           <span id="file-name" style="display:none;"></span>
-          <input type="submit" value="Submit">
+          <input type="submit" value="Submit" id="submit-button">
         </form>
       </div>
 
@@ -109,36 +109,53 @@
     const fileNameElement = document.getElementById("file-name");
     const urlContainer = document.getElementById("url-container");
     const fileUrl = document.getElementById("file-url");
+    const submitButton = document.getElementById("submit-button");
+
+    const serverUrl = "{{ r }}";
 
     form.addEventListener("submit", function(e) {
       e.preventDefault();
+
+      submitButton.disabled = true;
+
       const formData = new FormData(form);
 
       fileNameElement.style.display = "none";
 
-      const xhr = new XMLHttpRequest();
-      xhr.open("POST", "/", true);
-
-      xhr.onload = function() {
-        if (xhr.status === 200) {
-          const response = JSON.parse(xhr.responseText);
-          const url = response.url;
-          fileUrl.href = url;
-          fileUrl.textContent = url;
-          urlContainer.style.display = "block";
-          
-          fileInput.value = '';
-        } else {
-          alert("Error uploading file.");
+      fetch("/", {
+        method: "POST",
+        body: formData,
+      })
+      .then(response => {
+        if (!response.ok) {
+          throw new Error("Error uploading file.");
         }
-      };
-
-      xhr.send(formData);
+        return response.json();
+      })
+      .then(data => {
+        const url = data.url;
+        fileUrl.href = url;
+        fileUrl.textContent = url;
+        urlContainer.style.display = "block";
+        fileInput.value = '';
+      })
+      .catch(error => {
+        alert(error.message);
+      });
     });
 
     fileInput.addEventListener("change", function() {
       fileNameElement.textContent = fileInput.files[0].name;
       fileNameElement.style.display = "inline";
+    });
+
+    function refreshPageAfterFileViewed() {
+      window.location.reload();
+    }
+
+    fileUrl.addEventListener('click', function() {
+      window.open(fileUrl.href, '_blank');
+      refreshPageAfterFileViewed();
     });
   </script>
 </body>
