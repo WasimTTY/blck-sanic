@@ -18,7 +18,9 @@ bp = Blueprint('blck', url_prefix='/')
 files_dir = 'files'
 os.makedirs(files_dir, exist_ok=True)
 logger.debug(f"Ensured that the '{files_dir}' directory exists.")
-app.static('/files', files_dir)
+
+bp.static('/files', files_dir)
+
 jinja_env = Environment(loader=FileSystemLoader('templates'))
 
 file_metadata = {}
@@ -80,12 +82,11 @@ async def clean_up_expired_files():
         
         await asyncio.sleep(60)
 
-@app.listener('before_server_start')
+@bp.listener('before_server_start')
 async def before_server_start(app, loop):
-    loop.create_task(clean_up_expired_files())
+    app.add_task(clean_up_expired_files())
 
 app.blueprint(bp)
 
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=8000, debug=True)
-    
