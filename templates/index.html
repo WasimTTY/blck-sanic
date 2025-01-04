@@ -75,6 +75,11 @@
       font-size: 16px;
       display: none;
     }
+
+    /* Hide submit button by default */
+    #submit-button {
+      display: none;
+    }
   </style>
 </head>
 <body>
@@ -147,6 +152,7 @@
     fileInput.addEventListener("change", function() {
       fileNameElement.textContent = fileInput.files[0].name;
       fileNameElement.style.display = "inline";
+      submitButton.style.display = "inline-block";  // Show submit button when a file is selected
     });
 
     function refreshPageAfterFileViewed() {
