@@ -76,9 +76,69 @@
       display: none;
     }
 
-    /* Hide submit button by default */
-    #submit-button {
+    .file-list {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+      width: 100%;
+    }
+
+    .file-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .file-item a {
+      color: #0078b4;
+      text-decoration: none;
+    }
+
+    .copy-button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 14px;
+      margin-left: 10px;
+    }
+
+    .copy-button:focus {
+      outline: none;
+    }
+
+    .copy-button:active {
+      background-color: #45a049;
+    }
+
+    .copy-feedback {
+      font-size: 12px;
+      color: #4CAF50;
+      margin-top: 5px;
       display: none;
+    }
+
+    .upload-box {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px 40px;
+      background-color: #a8d6a4;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 18px;
+      color: white;
+      font-weight: bold;
+      width: 250px;
+      height: 60px;
+      margin: 0 auto 20px;
+      transition: background-color 0.3s ease;
+    }
+
+    .upload-box:hover {
+      background-color: #81c784;
     }
   </style>
 </head>
@@ -86,17 +146,17 @@
   <div class="container">
     <div class="jumbotron">
       <h1>blck</h1>
-      <p class="lead">Upload an <abbr title="It gets deleted when viewed"><u>ephemeral</u></abbr> file</p>
+      <p class="lead">Upload multiple <abbr title="It gets deleted when viewed"><u>ephemeral</u></abbr> files</p>
       <div class="form">
-        <form id="uploadForm" method="post" enctype="multipart/form-data">
-          <input type="file" id="upload-input" name="c" class="btn" value="Select file">
-          <span id="file-name" style="display:none;"></span>
-          <input type="submit" value="Submit" id="submit-button">
-        </form>
+        <div id="uploadBox" class="upload-box">
+          Upload files
+        </div>
+        <input type="file" id="upload-input" name="c" class="btn" multiple style="display:none;">
       </div>
 
-      <div class="url-container" id="url-container">
-        <p>File URL: <a id="file-url" href="#" target="_blank">...</a></p>
+      <div id="file-list" class="url-container">
+        <p>Uploaded Files:</p>
+        <ul id="file-links-list" class="file-list"></ul>
       </div>
 
       <hr>
@@ -109,59 +169,57 @@
   </div>
 
   <script>
-    const form = document.getElementById("uploadForm");
     const fileInput = document.getElementById("upload-input");
-    const fileNameElement = document.getElementById("file-name");
-    const urlContainer = document.getElementById("url-container");
-    const fileUrl = document.getElementById("file-url");
-    const submitButton = document.getElementById("submit-button");
+    const uploadBox = document.getElementById("uploadBox");
+    const fileList = document.getElementById("file-list");
+    const fileLinksList = document.getElementById("file-links-list");
 
-    const serverUrl = "{{ r }}";
-
-    form.addEventListener("submit", function(e) {
-      e.preventDefault();
-
-      submitButton.disabled = true;
-
-      const formData = new FormData(form);
-
-      fileNameElement.style.display = "none";
-
-      fetch("/", {
-        method: "POST",
-        body: formData,
-      })
-      .then(response => {
-        if (!response.ok) {
-          throw new Error("Error uploading file.");
-        }
-        return response.json();
-      })
-      .then(data => {
-        const url = data.url;
-        fileUrl.href = url;
-        fileUrl.textContent = url;
-        urlContainer.style.display = "block";
-        fileInput.value = '';
-      })
-      .catch(error => {
-        alert(error.message);
-      });
+    uploadBox.addEventListener("click", function() {
+      fileInput.click();
     });
 
     fileInput.addEventListener("change", function() {
-      fileNameElement.textContent = fileInput.files[0].name;
-      fileNameElement.style.display = "inline";
-      submitButton.style.display = "inline-block";  // Show submit button when a file is selected
-    });
+      if (fileInput.files.length === 0) return;
 
-    function refreshPageAfterFileViewed() {
-      window.location.reload();
-    }
+      const formData = new FormData();
+      Array.from(fileInput.files).forEach(file => {
+        formData.append("c", file);
+      });
 
-    fileUrl.addEventListener('click', function() {
-      window.open(fileUrl.href, '_blank');
-      refreshPageAfterFileViewed();
+      fileList.style.display = "block";
+
+      Array.from(fileInput.files).forEach(file => {
+        fetch("/", {
+          method: "POST",
+          body: formData,
+        })
+        .then(response => response.json())
+        .then(data => {
+          if (data.url) {
+            const listItem = document.createElement("li");
+            listItem.classList.add("file-item");
+
+            const fileName = document.createElement("span");
+            fileName.textContent = file.name;
+            listItem.appendChild(fileName);
+
+            const link = document.createElement("a");
+            link.href = data.url;
+            link.textContent = data.url;
+            link.target = "_blank";
+            listItem.appendChild(link);
+
+            fileLinksList.appendChild(listItem);
+          } else {
+            alert("Failed to upload file.");
+          }
+        })
+        .catch(error => {
+          alert("An error occurred: " + error.message);
+        });
+      });
+
+      fileInput.value = '';
     });
   </script>
 </body>
