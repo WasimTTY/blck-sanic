@@ -188,35 +188,35 @@
 
       fileList.style.display = "block";
 
-      Array.from(fileInput.files).forEach(file => {
-        fetch("/", {
-          method: "POST",
-          body: formData,
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.url) {
+      fetch("/", {
+        method: "POST",
+        body: formData,
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.files && Array.isArray(data.files)) {
+          data.files.forEach((fileData) => {
             const listItem = document.createElement("li");
             listItem.classList.add("file-item");
 
             const fileName = document.createElement("span");
-            fileName.textContent = file.name;
+            fileName.textContent = fileData.name;
             listItem.appendChild(fileName);
 
             const link = document.createElement("a");
-            link.href = data.url;
-            link.textContent = data.url;
+            link.href = fileData.url;
+            link.textContent = fileData.url;
             link.target = "_blank";
             listItem.appendChild(link);
 
             fileLinksList.appendChild(listItem);
-          } else {
-            alert("Failed to upload file.");
-          }
-        })
-        .catch(error => {
-          alert("An error occurred: " + error.message);
-        });
+          });
+        } else {
+          alert("Failed to upload files.");
+        }
+      })
+      .catch(error => {
+        alert("An error occurred: " + error.message);
       });
 
       fileInput.value = '';
