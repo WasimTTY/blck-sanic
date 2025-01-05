@@ -55,18 +55,26 @@ async def urlget(request, urlshort):
 async def handle_file_upload(request):
     if not request.files or 'c' not in request.files:
         return json({'error': 'No file provided'}, status=400)
-    file = request.files['c'][0]
-    file_id = ''.join(choice(ascii_uppercase + ascii_lowercase) for _ in range(6))
-    file_path = os.path.join(files_dir, file_id)
-    with open(file_path, 'wb') as f:
-        f.write(file.body)
-    mime_type = file.type or magic.from_file(file_path, mime=True)
-    if mime_type:
-        os.rename(file_path, f"{file_path}.{mime_type.split('/')[1]}")
 
-    file_metadata[file_id] = {'last_accessed': time.time()}
+    file_urls = []
+    for file in request.files['c']:
+        file_id = ''.join(choice(ascii_uppercase + ascii_lowercase) for _ in range(6))
+        file_path = os.path.join(files_dir, file_id)
+        
+        with open(file_path, 'wb') as f:
+            f.write(file.body)
 
-    return json({'url': f'{request.app.config.get("SERVER_URL", f"http://{request.host}/")}{file_id}'})
+        mime_type = file.type or magic.from_file(file_path, mime=True)
+        if mime_type:
+            os.rename(file_path, f"{file_path}.{mime_type.split('/')[1]}")
+
+        file_metadata[file_id] = {'last_accessed': time.time()}
+
+        # Generate the URL for the uploaded file
+        file_url = f'{request.app.config.get("SERVER_URL", f"http://{request.host}/")}{file_id}'
+        file_urls.append({'url': file_url, 'name': file.name})
+    
+    return json({'files': file_urls})
 
 async def clean_up_expired_files():
     while True:
