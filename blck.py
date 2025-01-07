@@ -2,7 +2,7 @@ import os
 import logging
 import magic
 import time
-import asyncio
+import asyncio 
 from sanic import Sanic, Blueprint
 from sanic.response import json, html, file
 from jinja2 import Environment, FileSystemLoader
@@ -28,19 +28,22 @@ EXPIRATION_TIME = 4 * 60 * 60
 
 @bp.route("/health")
 async def health_check(request):
+    logger.debug(f"Health check route accessed with the method: {request.method}")
     return json({'status': 'healthy'})
 
 @bp.route("/", methods=['GET', 'POST'])
 async def index(request):
+    logger.debug(f"Index route accessed with the method: {request.method}")
     if request.method == 'GET':
         return html(jinja_env.get_template('index.html').render(r=request.app.config.get("SERVER_URL", f"http://{request.host}/")))
     return await handle_file_upload(request)
 
 @bp.route("/<urlshort>")
 async def urlget(request, urlshort):
+    logger.debug(f"Request reveived for URL short: {urlshort}")
     file_path = next((os.path.join(files_dir, f) for f in os.listdir(files_dir) if f.startswith(urlshort)), None)
     if not file_path or not os.path.isfile(file_path):
-        return json({'error': 'File not found'}, status=404)
+        return json({'error': 'File not found'})
 
     file_metadata[urlshort]['last_accessed'] = time.time()
 
@@ -50,14 +53,16 @@ async def urlget(request, urlshort):
         os.remove(file_path)
         return response
     except Exception as e:
-        return json({'error': 'Error serving file'}, status=500)
+        return json({'error': 'Error serving file'})
 
 async def handle_file_upload(request):
+    logger.debug(f"Handling file upload with the method: {request.method}")	
     if not request.files or 'c' not in request.files:
-        return json({'error': 'No file provided'}, status=400)
+        return json({'error': 'No file provided'})
 
     file_urls = []
     for file in request.files['c']:
+        logger.debug(f"Processing file: {file.name} with size: {len(file.body)} bytes")
         file_id = ''.join(choice(ascii_uppercase + ascii_lowercase) for _ in range(6))
         file_path = os.path.join(files_dir, file_id)
         
@@ -67,6 +72,7 @@ async def handle_file_upload(request):
         mime_type = file.type or magic.from_file(file_path, mime=True)
         if mime_type:
             os.rename(file_path, f"{file_path}.{mime_type.split('/')[1]}")
+            logger.debug(f"File renamed to: {file_path}.{mime_type.split('/')[1]}")
 
         file_metadata[file_id] = {'last_accessed': time.time()}
 
@@ -77,7 +83,8 @@ async def handle_file_upload(request):
     return json({'files': file_urls})
 
 async def clean_up_expired_files():
-    while True:
+    while True:   
+        logger.debug(f"Running cleanup tasks for expired files.")
         current_time = time.time()
         for file_id, metadata in list(file_metadata.items()):
             last_accessed = metadata['last_accessed']
@@ -85,6 +92,7 @@ async def clean_up_expired_files():
             if current_time - last_accessed > EXPIRATION_TIME:
                 file_path = os.path.join(files_dir, file_id)
                 if os.path.exists(file_path):
+                    logger.debug(f"Expired file {file_id} deleted: {file_path}")
                     os.remove(file_path)
                 del file_metadata[file_id]
         
@@ -92,9 +100,11 @@ async def clean_up_expired_files():
 
 @bp.listener('before_server_start')
 async def before_server_start(app, loop):
+    logger.debug("Server is about to start. Adding cleanup task.")
     app.add_task(clean_up_expired_files())
 
 app.blueprint(bp)
 
 if __name__ == '__main__':
+    logger.debug(f"Starting sanic application")
     app.run(host='0.0.0.0', port=8000, debug=True)
