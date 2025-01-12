@@ -26,6 +26,8 @@ jinja_env = Environment(loader=FileSystemLoader('templates'))
 file_metadata = {}
 EXPIRATION_TIME = 4 * 60 * 60
 
+app.config.PROXIES_COUNT = 1
+
 @bp.route("/health")
 async def health_check(request):
     logger.debug(f"Health check route accessed with the method: {request.method}")
@@ -34,6 +36,8 @@ async def health_check(request):
 @bp.route("/", methods=['GET', 'POST'])
 async def index(request):
     logger.debug(f"Index route accessed with the method: {request.method}")
+    scheme = request.headers.get('X-Forwarded-Proto', request.scheme)
+    base_url = f"{scheme}://{request.host}/"
     if request.method == 'GET':
         return html(jinja_env.get_template('index.html').render(r=request.app.config.get("SERVER_URL", f"http://{request.host}/")))
     return await handle_file_upload(request)
@@ -77,7 +81,7 @@ async def handle_file_upload(request):
         file_metadata[file_id] = {'last_accessed': time.time()}
 
         # Generate the URL for the uploaded file
-        file_url = f'{request.app.config.get("SERVER_URL", f"http://{request.host}/")}{file_id}'
+        file_url = f"{base_url}{file_id}"
         file_urls.append({'url': file_url, 'name': file.name})
     
     return json({'files': file_urls})
