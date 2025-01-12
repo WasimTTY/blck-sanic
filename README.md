@@ -17,6 +17,17 @@ refer  the astral-uv documentation: https://docs.astral.sh/uv/
 
 run `uv run blck.py -d` to the run the application in debug mode 
 
+nginx
+-----
+
+```
+location / {
+	proxy_set_header Host $host;
+	proxy_set_header X-Real-IP $remote_addr;
+	proxy_set_header X-Forwarded-Proto https;
+	proxy_pass http://127.0.0.1:8000;
+}
+```
 
 
 ## Usage
