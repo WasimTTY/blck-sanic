@@ -1,0 +1,226 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width; initial-scale=1">
+  <title>blck</title>
+  <style>
+    *, :after, :before { box-sizing: border-box; }
+    body {
+      background-attachment: fixed fixed;
+      background-color: #f7f7f7;
+      background-position: 85% 100% top left;
+      background-repeat: no-repeat, repeat;
+      color: #333;
+      font-family: "Helvetica Neue", Helvetica, Arial, sans-serif;
+      font-size: 14px;
+      height: 100%;
+      line-height: 20px;
+      margin: 0;
+      padding-top: 20px;
+      padding-bottom: 40px;
+    }
+    .container {
+      margin: 0 auto;
+      max-width: 700px;
+    }
+    p { margin: 0 0 10px; }
+    a {
+      color: #0078b4;
+      text-decoration: none;
+      transition: color .25s;
+    }
+    a:active, a:focus, a:hover { color: #005580; }
+    a:focus { outline: thin dotted #333 }
+    .jumbotron {
+      margin: 60px 0;
+      text-align: center;
+      transition: width .5s, height .5s, margin .5s, padding .5s;
+    }
+    .jumbotron h1 {
+      color: inherit;
+      font-family: inherit;
+      font-size: 72px;
+      font-weight: 700;
+      line-height: 1;
+      margin: 10px 0;
+      cursor: default;
+    }
+    .jumbotron .lead {
+      font-size: 21px;
+      font-weight: 200;
+      line-height: 30px;
+      margin-bottom: 20px;
+      transition: font-size .5s;
+    }
+    .jumbotron .btn {
+      background: rgba(202, 230, 190, .75);
+      border: 1px solid #b7d1a0;
+      border-radius: 4px;
+      color: #468847;
+      cursor: pointer;
+      display: inline-block;
+      font-size: 24px;
+      padding: 28px 48px;
+      text-shadow: 0 1px rgba(255, 255, 255, .5);
+      transition: background-color .25s, width .5s, height .5s;
+    }
+    .jumbotron .btn:active, .jumbotron .btn:focus, .jumbotron .btn:hover {
+      background-color: #bce4aa;
+      text-decoration: none;
+    }
+
+    .url-container {
+      margin-top: 20px;
+      font-size: 16px;
+      display: none;
+    }
+
+    .file-list {
+      list-style-type: none;
+      padding: 0;
+      margin: 0;
+      width: 100%;
+    }
+
+    .file-item {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 10px;
+    }
+
+    .file-item a {
+      color: #0078b4;
+      text-decoration: none;
+    }
+
+    .copy-button {
+      background-color: #4CAF50;
+      color: white;
+      border: none;
+      padding: 5px 10px;
+      cursor: pointer;
+      border-radius: 4px;
+      font-size: 14px;
+      margin-left: 10px;
+    }
+
+    .copy-button:focus {
+      outline: none;
+    }
+
+    .copy-button:active {
+      background-color: #45a049;
+    }
+
+    .copy-feedback {
+      font-size: 12px;
+      color: #4CAF50;
+      margin-top: 5px;
+      display: none;
+    }
+
+    .upload-box {
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      padding: 20px 40px;
+      background-color: #a8d6a4;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 18px;
+      color: white;
+      font-weight: bold;
+      width: 250px;
+      height: 60px;
+      margin: 0 auto 20px;
+      transition: background-color 0.3s ease;
+    }
+
+    .upload-box:hover {
+      background-color: #81c784;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="jumbotron">
+      <h1>blck</h1>
+      <p class="lead">Upload multiple <abbr title="It gets deleted when viewed"><u>ephemeral</u></abbr> files</p>
+      <div class="form">
+        <div id="uploadBox" class="upload-box">
+          Upload files
+        </div>
+        <input type="file" id="upload-input" name="c" class="btn" multiple style="display:none;">
+      </div>
+
+      <div id="file-list" class="url-container">
+        <p>Uploaded Files:</p>
+        <ul id="file-links-list" class="file-list"></ul>
+      </div>
+
+      <hr>
+      <footer>
+        with ❤️ from <a href="https://twitter.com/parazyd">parazyd</a> |
+        <a href="https://github.com/parazyd/blck">original-source</a> |
+        <a href="https://github.com/WasimTTY/blck-sanic">sanic-version</a>
+      </footer>
+    </div>
+  </div>
+
+  <script>
+    const fileInput = document.getElementById("upload-input");
+    const uploadBox = document.getElementById("uploadBox");
+    const fileList = document.getElementById("file-list");
+    const fileLinksList = document.getElementById("file-links-list");
+
+    uploadBox.addEventListener("click", function() {
+      fileInput.click();
+    });
+
+    fileInput.addEventListener("change", function() {
+      if (fileInput.files.length === 0) return;
+
+      const formData = new FormData();
+      Array.from(fileInput.files).forEach(file => {
+        formData.append("c", file);
+      });
+
+      fileList.style.display = "block";
+
+      fetch("/", {
+        method: "POST",
+        body: formData,
+      })
+      .then(response => response.json())
+      .then(data => {
+        if (data.files && Array.isArray(data.files)) {
+          data.files.forEach((fileData) => {
+            const listItem = document.createElement("li");
+            listItem.classList.add("file-item");
+
+            const fileName = document.createElement("span");
+            fileName.textContent = fileData.name;
+            listItem.appendChild(fileName);
+
+            const link = document.createElement("a");
+            link.href = fileData.url;
+            link.textContent = fileData.url;
+            link.target = "_blank";
+            listItem.appendChild(link);
+
+            fileLinksList.appendChild(listItem);
+          });
+        } else {
+          alert("Failed to upload files.");
+        }
+      })
+      .catch(error => {
+        alert("An error occurred: " + error.message);
+      });
+
+      fileInput.value = '';
+    });
+  </script>
+</body>
+</html>
