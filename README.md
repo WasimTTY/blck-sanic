@@ -11,7 +11,7 @@ This project is a refactor of the original [blck](https://github.com/parazyd/blc
 ## Added Features
 - **Async Logging**: Integrated [aiologger](https://async-worker.github.io/aiologger/) for asynchronous logging.
 - **File Expiration**: Files automatically expire after 4 hours, and expired files are cleaned up periodically.
-
+- **File size upload limit**: Enforced 60MB upload size cap.
 
 ## Installation
 
