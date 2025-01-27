@@ -64,7 +64,7 @@ async def urlget(request, urlshort):
     await logger.debug(f"{current_time}: Request received for URL short: {urlshort}")
     file_path = next((os.path.join(files_dir, f) for f in os.listdir(files_dir) if f.startswith(urlshort)), None)
     if not file_path or not os.path.isfile(file_path):
-        return json({'error': 'File not found'}, status 404)
+        return json({'error': 'File not found'}, status=404)
 
     file_metadata[urlshort]['last_accessed'] = time.time()
     mime = magic.from_file(file_path, mime=True)
