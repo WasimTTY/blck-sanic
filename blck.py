@@ -37,6 +37,7 @@ jinja_env = Environment(loader=FileSystemLoader('templates'))
 file_metadata = {}
 EXPIRATION_TIME = 4 * 60 * 60
 app.config.PROXIES_COUNT = 1
+max_file_size = 60 * 1024 * 1024
 
 def get_current_time():
     return datetime.now().strftime('%Y-%m-%d %H:%M:%S')
@@ -45,7 +46,7 @@ def get_current_time():
 async def health_check(request):
     current_time = get_current_time()
     await logger.debug(f"{current_time}: Health check route accessed with the method: {request.method}")
-    return json({'status': 'healthy'})
+    return json({'status': 'healthy'}, status=200)
 
 @bp.route("/", methods=['GET', 'POST'])
 async def index(request):
@@ -63,7 +64,7 @@ async def urlget(request, urlshort):
     await logger.debug(f"{current_time}: Request received for URL short: {urlshort}")
     file_path = next((os.path.join(files_dir, f) for f in os.listdir(files_dir) if f.startswith(urlshort)), None)
     if not file_path or not os.path.isfile(file_path):
-        return json({'error': 'File not found'})
+        return json({'error': 'File not found'}, status 404)
 
     file_metadata[urlshort]['last_accessed'] = time.time()
     mime = magic.from_file(file_path, mime=True)
@@ -73,17 +74,21 @@ async def urlget(request, urlshort):
         return response
     except Exception as e:
         await logger.error(f"{current_time}: Error serving file: {e}")
-        return json({'error': 'Error serving file'})
+        return json({'error': 'Error serving file'}, status=400)
 
 async def handle_file_upload(request, base_url):
     current_time = get_current_time()
     await logger.debug(f"{current_time}: Handling file upload with the method: {request.method}")
     if not request.files or 'c' not in request.files:
-        return json({'error': 'No file provided'})
+        return json({'error': 'No file provided'}, status=404)
 
     file_urls = []
     for file in request.files['c']:
+        file_size = len(file.body)
         await logger.debug(f"{current_time}: Processing file: {file.name} with size: {len(file.body)} bytes")
+        if file_size > max_file_size:
+            await logger.debug(f"{current_time}: File size exceeds the {max_file_size // (1024 * 1024)}MB limit")
+            return json({'error': f'File size exceeds the {max_file_size // (1024 * 1024)}MB limit'}, status=400)
         file_id = ''.join(choice(ascii_uppercase + ascii_lowercase) for _ in range(6))
         file_path = os.path.join(files_dir, file_id)
 
